@@ -141,6 +141,33 @@
         .next-button:active {
             transform: scale(0.98);
         }
+		
+		/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .options {
+        flex-direction: column; /* Вертикальное расположение */
+        gap: 15px; /* Расстояние между элементами */
+        padding: 0 20px; /* Боковые отступы */
+    }
+
+    .option {
+        flex: 1 1 auto !important;
+        max-width: 100% !important; /* Полная ширина контейнера */
+        width: 100%;
+        height: auto;
+        min-height: 150px; /* Минимальная высота для мобилок */
+        margin: 5px 0;
+    }
+
+    .option img {
+        max-height: 200px; /* Лимит высоты для мобилок */
+        object-fit: contain;
+    }
+
+    .option:hover img {
+        transform: scale(1.1); /* Уменьшенный эффект для мобилок */
+    }
+}
     </style>
 </head>
 <body>

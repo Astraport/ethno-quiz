@@ -65,6 +65,7 @@
     max-width: 30%;
     height: auto; /* Убираем фиксированную высоту */
     min-height: 200px; /* Минимальная высота для контейнера */
+	overflow: visible !important;
 }
 
 .option img {
@@ -75,12 +76,18 @@
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+	position: relative; /* Добавляем позиционирование */
+    z-index: 1; /* Базовый слой для всех изображений */
 }
 
 .option:hover img {
     transform: scale(2); /* Уменьшаем эффект увеличения */
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
     z-index: 1;
+}
+.option:hover + .option img,
+.option:hover ~ .option img {
+    z-index: 2; /* Остальные изображения под активным */
 }
 
 .options {
