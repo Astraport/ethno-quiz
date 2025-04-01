@@ -61,31 +61,34 @@
     transition: all 0.3s ease;
     margin: 10px;
     position: relative;
-    flex: 1 1 30%; /* Равномерное распределение пространства */
-    max-width: 30%; /* Максимальная ширина элемента */
-    height: 250px; /* Фиксированная высота контейнера */
+    flex: 1 1 30%;
+    max-width: 30%;
+    height: auto; /* Убираем фиксированную высоту */
+    min-height: 200px; /* Минимальная высота для контейнера */
 }
 
 .option img {
     width: 100%;
-    height: 100%;
-    object-fit: cover; /* Заполнение контейнера с сохранением пропорций */
+    height: auto; /* Сохраняем пропорции */
+    max-height: 250px; /* Максимальная высота изображения */
+    object-fit: contain; /* Полное отображение без обрезки */
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
 }
 
 .option:hover img {
-    transform: scale(1.31); /* Уменьшенный эффект увеличения */
+    transform: scale(1.05); /* Уменьшаем эффект увеличения */
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    z-index: 1; /* Поднимаем изображение над другими */
+    z-index: 1;
 }
 
 .options {
     display: flex;
-    justify-content: center; /* Центрирование элементов */
-    gap: 20px; /* Расстояние между элементами */
-    padding: 0 20px;
+    justify-content: center;
+    gap: 15px; /* Уменьшаем расстояние между элементами */
+    padding: 0 10px; /* Уменьшаем боковые отступы */
+    align-items: center; /* Выравнивание по центру */
 }
 
         .message {
