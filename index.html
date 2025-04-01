@@ -95,7 +95,7 @@
     let timeLeft;
     const questionTime = 30;
 	
-	 function loadData() {
+function loadData() {
         return fetch('data.csv')
             .then(response => response.text())
             .then(data => {
@@ -103,15 +103,21 @@
                     .map((row, index) => {
                         try {
                             const [name, img1, img2, extra, correctImg] = row.split(';');
-                            if (!img1 || !img2 || !correctImg) return null;
                             
-                            // Добавляем префиксы к путям
+                            // Нормализация путей
+                            const normalizePath = (path, base) => {
+                                return `${base}/${path.trim()}`
+                                    .replace(/\\/g, '/')  // Замена обратных слешей
+                                    .replace(/\/+/g, '/') // Удаление двойных слешей
+                            };
+
                             return {
-                                img1: `faces/${img1.trim()}`,
-                                img2: `faces/${img2.trim()}`,
-                                correctImg: `m/${correctImg.trim()}`
+                                img1: normalizePath(img1, 'faces'),
+                                img2: normalizePath(img2, 'faces'),
+                                correctImg: normalizePath(correctImg, 'm')
                             };
                         } catch (e) {
+                            console.warn(`Ошибка в строке ${index + 1}:`, e);
                             return null;
                         }
                     })
@@ -170,12 +176,11 @@
             return;
         }
 
-        // Отображение вопроса
-         document.getElementById('questionImages').innerHTML = `
+        document.getElementById('questionImages').innerHTML = `
             <img src="${currentItem.img1}" 
-                 onerror="this.src='faces/placeholder.jpg'">
+                 onerror="handleImageError(this, 'faces/placeholder.jpg')">
             <img src="${currentItem.img2}" 
-                 onerror="this.src='faces/placeholder.jpg'">
+                 onerror="handleImageError(this, 'faces/placeholder.jpg')">
         `;
 
 
@@ -195,11 +200,11 @@
         answersArray.sort(() => Math.random() - 0.5);
 
         // Отрисовка ответов
-        document.getElementById('answers').innerHTML = answersArray.map(img => `
+         document.getElementById('answers').innerHTML = answersArray.map(img => `
             <div class="answer-option" 
                  onclick="checkAnswer('${img}', '${currentItem.correctImg}')">
                 <img src="${img}" 
-                     onerror="this.src='m/placeholder.jpg'"
+                     onerror="handleImageError(this, 'm/placeholder.jpg')"
                      alt="Вариант ответа">
             </div>
         `).join('');
@@ -213,7 +218,12 @@
             if(timeLeft <= 0) handleAnswer(false);
         }, 1000);
     }
-
+ function handleImageError(imgElement, fallback) {
+        imgElement.onerror = null; // Предотвращаем бесконечный цикл
+        imgElement.src = fallback;
+        imgElement.style.opacity = '0.7';
+        imgElement.parentElement.style.borderColor = '#ff0000';
+    }
     // Остальные функции без изменений
     function checkAnswer(selected, correct) {
         handleAnswer(selected === correct);
