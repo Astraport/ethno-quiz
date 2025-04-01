@@ -90,35 +90,63 @@
 
     <script>
         let currentData = [];
-        let score = 50;
-        let timerId;
-        let timeLeft;
-        const questionTime = 30;
+    let score = 50;
+    let timerId;
+    let timeLeft;
+    const questionTime = 30;
 
-        // Загрузка данных
-        fetch('data.csv')
-            .then(response => response.text())
-            .then(data => {
-                currentData = data.split('\n')
-                    .map(row => {
-                        const [name, img1, img2, extra, correctImg] = row.split(';');
-                        return {img1, img2, correctImg};
-                    })
-                    .filter(item => item.img1 && item.img2 && item.correctImg)
-                    .sort(() => Math.random() - 0.5);
-                startNewRound();
-            });
+    // Загрузка данных с улучшенной обработкой
+    fetch('data.csv')
+        .then(response => response.text())
+        .then(data => {
+            currentData = data
+                .split('\n')
+                .map(row => {
+                    const cleanedRow = row.trim();
+                    if (!cleanedRow) return null; // Пропуск пустых строк
+                    
+                    const parts = cleanedRow.split(';');
+                    if (parts.length < 5) {
+                        console.warn('Некорректная строка:', cleanedRow);
+                        return null;
+                    }
+                    
+                    return {
+                        img1: parts[1]?.trim(),
+                        img2: parts[2]?.trim(),
+                        correctImg: parts[4]?.trim()
+                    };
+                })
+                .filter(item => 
+                    item !== null &&
+                    item.img1 && 
+                    item.img2 && 
+                    item.correctImg
+                )
+                .sort(() => Math.random() - 0.5);
+
+            if (currentData.length === 0) {
+                alert('Ошибка загрузки данных!');
+                return;
+            }
+
+            startNewRound();
+        })
+        .catch(error => console.error('Ошибка:', error));
 
         function startNewRound() {
-            // Сброс таймера
-            clearInterval(timerId);
-            timeLeft = questionTime;
-            document.getElementById('timer').style.width = '100%';
+		clearInterval(timerId);
+        timeLeft = questionTime;
+        document.getElementById('timer').style.width = '100%';
 
-            // Выбор текущего вопроса
-            const currentItem = currentData.shift();
-            if(!currentItem) return endGame();
+        if (currentData.length === 0) {
+            endGame();
+            return;
+        }
 
+        const currentItem = currentData.pop(); // Более безопасный метод
+
+          
             // Отображение вопроса
             document.getElementById('questionImages').innerHTML = `
                 <img src="faces/${currentItem.img1}">
