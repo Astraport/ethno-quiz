@@ -94,34 +94,30 @@
     let timerId;
     let timeLeft;
     const questionTime = 30;
-
-    // Загрузка и обработка данных
-    function loadData() {
+	
+	 function loadData() {
         return fetch('data.csv')
             .then(response => response.text())
             .then(data => {
-                // Парсинг CSV с обработкой ошибок
                 const allData = data.split('\n')
                     .map((row, index) => {
                         try {
                             const [name, img1, img2, extra, correctImg] = row.split(';');
-                            if (!img1 || !img2 || !correctImg) {
-                                console.warn(`Пропущена строка ${index + 1}: недостаточно данных`);
-                                return null;
-                            }
+                            if (!img1 || !img2 || !correctImg) return null;
+                            
+                            // Добавляем префиксы к путям
                             return {
-                                img1: img1.trim(),
-                                img2: img2.trim(),
-                                correctImg: correctImg.trim()
+                                img1: `faces/${img1.trim()}`,
+                                img2: `faces/${img2.trim()}`,
+                                correctImg: `m/${correctImg.trim()}`
                             };
                         } catch (e) {
-                            console.warn(`Ошибка в строке ${index + 1}:`, e);
                             return null;
                         }
                     })
                     .filter(item => item !== null);
 
-                if (allData.length === 0) throw new Error('Нет валидных данных в файле');
+               if (allData.length === 0) throw new Error('Нет валидных данных в файле');
                 
                 // Перемешивание Фишера-Йетса
                 for (let i = allData.length - 1; i > 0; i--) {
@@ -132,6 +128,7 @@
                 return allData;
             });
     }
+
 
     // Инициализация игры
     async function initGame() {
@@ -174,10 +171,13 @@
         }
 
         // Отображение вопроса
-        document.getElementById('questionImages').innerHTML = `
-            <img src="faces/${currentItem.img1}" alt="Изображение 1">
-            <img src="faces/${currentItem.img2}" alt="Изображение 2">
+         document.getElementById('questionImages').innerHTML = `
+            <img src="${currentItem.img1}" 
+                 onerror="this.src='faces/placeholder.jpg'">
+            <img src="${currentItem.img2}" 
+                 onerror="this.src='faces/placeholder.jpg'">
         `;
+
 
         // Формирование ответов
         const answers = new Set([currentItem.correctImg]);
@@ -197,10 +197,10 @@
         // Отрисовка ответов
         document.getElementById('answers').innerHTML = answersArray.map(img => `
             <div class="answer-option" 
-                 onclick="checkAnswer('m/${img}', '${currentItem.correctImg}')"
-                 data-correct="${img === currentItem.correctImg}">
-                <img src="m/${img}" alt="Вариант ответа" 
-                     onerror="this.parentElement.remove()">
+                 onclick="checkAnswer('${img}', '${currentItem.correctImg}')">
+                <img src="${img}" 
+                     onerror="this.src='m/placeholder.jpg'"
+                     alt="Вариант ответа">
             </div>
         `).join('');
 

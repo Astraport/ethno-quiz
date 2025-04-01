@@ -88,142 +88,168 @@
     <div class="question-text">Какая территория у этого этноса?</div>
     <div class="answers" id="answers"></div>
 
-    <script>
-        let currentData = [];
+<script>
+    let quizData = [];
     let score = 50;
     let timerId;
     let timeLeft;
     const questionTime = 30;
 
-    // Загрузка данных с улучшенной обработкой
-    fetch('data.csv')
-        .then(response => response.text())
-        .then(data => {
-            currentData = data
-                .split('\n')
-                .map(row => {
-                    const cleanedRow = row.trim();
-                    if (!cleanedRow) return null; // Пропуск пустых строк
-                    
-                    const parts = cleanedRow.split(';');
-                    if (parts.length < 5) {
-                        console.warn('Некорректная строка:', cleanedRow);
-                        return null;
-                    }
-                    
-                    return {
-                        img1: parts[1]?.trim(),
-                        img2: parts[2]?.trim(),
-                        correctImg: parts[4]?.trim()
-                    };
-                })
-                .filter(item => 
-                    item !== null &&
-                    item.img1 && 
-                    item.img2 && 
-                    item.correctImg
-                )
-                .sort(() => Math.random() - 0.5);
+    // Загрузка и обработка данных
+    function loadData() {
+        return fetch('data.csv')
+            .then(response => response.text())
+            .then(data => {
+                // Парсинг CSV с обработкой ошибок
+                const allData = data.split('\n')
+                    .map((row, index) => {
+                        try {
+                            const [name, img1, img2, extra, correctImg] = row.split(';');
+                            if (!img1 || !img2 || !correctImg) {
+                                console.warn(`Пропущена строка ${index + 1}: недостаточно данных`);
+                                return null;
+                            }
+                            return {
+                                img1: img1.trim(),
+                                img2: img2.trim(),
+                                correctImg: correctImg.trim()
+                            };
+                        } catch (e) {
+                            console.warn(`Ошибка в строке ${index + 1}:`, e);
+                            return null;
+                        }
+                    })
+                    .filter(item => item !== null);
 
-            if (currentData.length === 0) {
-                alert('Ошибка загрузки данных!');
+                if (allData.length === 0) throw new Error('Нет валидных данных в файле');
+                
+                // Перемешивание Фишера-Йетса
+                for (let i = allData.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [allData[i], allData[j]] = [allData[j], allData[i]];
+                }
+                
+                return allData;
+            });
+    }
+
+    // Инициализация игры
+    async function initGame() {
+        try {
+            quizData = await loadData();
+            if (quizData.length === 0) {
+                alert('Ошибка: нет данных для игры!');
                 return;
             }
-
             startNewRound();
-        })
-        .catch(error => console.error('Ошибка:', error));
+        } catch (error) {
+            alert(`Ошибка загрузки: ${error.message}`);
+        }
+    }
 
-        function startNewRound() {
-		clearInterval(timerId);
-        timeLeft = questionTime;
-        document.getElementById('timer').style.width = '100%';
+    function startNewRound() {
+        // Очистка предыдущего состояния
+        clearInterval(timerId);
+        document.getElementById('questionImages').innerHTML = '';
+        document.getElementById('answers').innerHTML = '';
 
-        if (currentData.length === 0) {
+        // Проверка наличия данных
+        if (quizData.length === 0) {
             endGame();
             return;
         }
 
-        const currentItem = currentData.pop(); // Более безопасный метод
+        // Выбор случайного вопроса
+        const currentIndex = Math.floor(Math.random() * quizData.length);
+        const currentItem = quizData[currentIndex];
+        
+        // Удаление использованного элемента
+        quizData.splice(currentIndex, 1);
 
-          
-            // Отображение вопроса
-            document.getElementById('questionImages').innerHTML = `
-                <img src="faces/${currentItem.img1}">
-                <img src="faces/${currentItem.img2}">
-            `;
-
-// Создание вариантов ответов
-    const answers = [currentItem.correctImg];
-    
-    // Создаем копию всех данных исключая текущий элемент
-    const otherItems = [...currentData.filter(item => item.correctImg !== currentItem.correctImg)];
-    
-    // Выбираем 2 уникальных случайных ответа из ДРУГИХ категорий
-    const wrongAnswers = [];
-    while(wrongAnswers.length < 2 && otherItems.length > 0) {
-        const randomIndex = Math.floor(Math.random() * otherItems.length);
-        const candidate = otherItems.splice(randomIndex, 1)[0].correctImg;
-        if(!answers.includes(candidate) && !wrongAnswers.includes(candidate)) {
-            wrongAnswers.push(candidate);
-        }
-    }
-    
-    answers.push(...wrongAnswers);
-    
-    // Если не хватило уникальных - добираем из любых
-    while(answers.length < 3) {
-        const randomItem = currentData[Math.floor(Math.random() * currentData.length)];
-        if(!answers.includes(randomItem.correctImg)) {
-            answers.push(randomItem.correctImg);
-        }
-    }
-            answers.sort(() => Math.random() - 0.5);
-
-            // Отрисовка ответов
-            document.getElementById('answers').innerHTML = answers.map(img => `
-                <div class="answer-option" onclick="checkAnswer('${img}', '${currentItem.correctImg}')">
-                    <img src="m/${img}">
-                </div>
-            `).join('');
-
-            // Запуск таймера
-            timerId = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timer').style.width = `${(timeLeft/questionTime)*100}%`;
-                
-                if(timeLeft <= 0) {
-                    handleAnswer(false);
-                }
-            }, 1000);
+        // Проверка валидности текущего элемента
+        if (!currentItem?.correctImg) {
+            console.error('Обнаружен некорректный элемент:', currentItem);
+            startNewRound(); // Пропустить битый вопрос
+            return;
         }
 
-        function checkAnswer(selected, correct) {
-            handleAnswer(selected === correct);
-        }
+        // Отображение вопроса
+        document.getElementById('questionImages').innerHTML = `
+            <img src="faces/${currentItem.img1}" alt="Изображение 1">
+            <img src="faces/${currentItem.img2}" alt="Изображение 2">
+        `;
 
-        function handleAnswer(isCorrect) {
-            clearInterval(timerId);
-            const points = isCorrect ? 30 + timeLeft : -30;
-            score += points;
-            document.getElementById('score').textContent = score;
-            
-            alert(isCorrect ? 
-                `Правильно! +${30 + timeLeft} баллов` : 
-                `Ошибка! -30 баллов`);
-            
-            if(score <= 0) {
-                endGame();
-                return;
+        // Формирование ответов
+        const answers = new Set([currentItem.correctImg]);
+        
+        // Добавление случайных неправильных ответов
+        while (answers.size < 3) {
+            const randomItem = quizData[Math.floor(Math.random() * quizData.length)];
+            if (randomItem?.correctImg && !answers.has(randomItem.correctImg)) {
+                answers.add(randomItem.correctImg);
             }
-            
-            setTimeout(startNewRound, 1500);
         }
 
-        function endGame() {
-            alert(`Игра окончена! Ваш счет: ${score}`);
-            location.reload();
-        }
-    </script>
+        // Преобразование в массив и перемешивание
+        const answersArray = Array.from(answers);
+        answersArray.sort(() => Math.random() - 0.5);
+
+        // Отрисовка ответов
+        document.getElementById('answers').innerHTML = answersArray.map(img => `
+            <div class="answer-option" 
+                 onclick="checkAnswer('m/${img}', '${currentItem.correctImg}')"
+                 data-correct="${img === currentItem.correctImg}">
+                <img src="m/${img}" alt="Вариант ответа" 
+                     onerror="this.parentElement.remove()">
+            </div>
+        `).join('');
+
+        // Запуск таймера
+        timeLeft = questionTime;
+        document.getElementById('timer').style.width = '100%';
+        timerId = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').style.width = `${(timeLeft/questionTime)*100}%`;
+            if(timeLeft <= 0) handleAnswer(false);
+        }, 1000);
+    }
+
+    // Остальные функции без изменений
+    function checkAnswer(selected, correct) {
+        handleAnswer(selected === correct);
+    }
+
+    function handleAnswer(isCorrect) {
+        clearInterval(timerId);
+        const points = isCorrect ? 30 + timeLeft : -30;
+        score = Math.max(0, score + points); // Запрет отрицательных очков
+        document.getElementById('score').textContent = score;
+        
+        // Показ результата
+        const result = document.createElement('div');
+        result.textContent = isCorrect ? 
+            `Правильно! +${30 + timeLeft} баллов` : 
+            `Ошибка! -30 баллов`;
+        result.style.color = isCorrect ? 'green' : 'red';
+        document.body.appendChild(result);
+        
+        setTimeout(() => {
+            result.remove();
+            if(quizData.length > 0 && score > 0) {
+                startNewRound();
+            } else {
+                endGame();
+            }
+        }, 1500);
+    }
+
+    function endGame() {
+        alert(`Игра окончена! Ваш счет: ${score}`);
+        initGame(); // Рестарт игры
+    }
+
+    // Запуск при загрузке
+    initGame();
+</script>
 </body>
 </html>
