@@ -73,6 +73,10 @@
             margin: 20px;
             color: #34495e;
         }
+		.answer-option:active {
+			transform: scale(0.95);
+			box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+		}
     </style>
 </head>
 <body>
