@@ -197,6 +197,7 @@
     <script>
         // Глобальные переменные
         let csvData = [];
+		let csvDataHard = [];
         let currentQuestion = null;
         let score = 50;
         let timer = 30;
@@ -245,6 +246,11 @@
             }
         }
 		
+		function getCSVHard(extra) {
+			const words = extra.split("|");
+			var itema = words[Math.floor(Math.random()*words.length)];
+			return csvData.filter(item => item.includes(itema));
+		}
 
         // Получение случайного элемента из массива
         function getRandomItem(array) {
@@ -322,7 +328,11 @@
                 console.log("Выбран вопрос:", currentQuestion.name);
                 
                 // Получение неправильных ответов
-				incorrectOptions = getRandomUniqueItems(csvData, 2, [currentQuestion]);
+				if (mode == 1){
+					incorrectOptions = getRandomUniqueItems(csvData, 2, [currentQuestion]);
+                } else {
+					incorrectOptions = getRandomUniqueItems(getCSVHard(currentQuestion.extraInfo), 2, [currentQuestion]);
+				}
                 // Проверка путей к изображениям
                 const image1Path = currentQuestion.image1.trim();
                 const image2Path = currentQuestion.image2.trim();
