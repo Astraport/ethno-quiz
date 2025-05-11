@@ -167,10 +167,32 @@
     .option:hover img {
         transform: scale(1.1); /* Уменьшенный эффект для мобилок */
     }
+	
+	.mode-switcher {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .mode-switcher label {
+            margin: 0 5px;
+            cursor: pointer;
+        }
 }
     </style>
 </head>
 <body>
+ <div class="mode-switcher">
+        <label>
+            <input type="radio" name="mode" value="normal" checked> Обычный
+        </label>
+        <label>
+            <input type="radio" name="mode" value="hard"> Сложный
+        </label>
+    </div>
     <div class="header">
         <div class="score">Баллы: <span id="score">50</span></div>
         <div class="timer">Время: <span id="timer">30</span> сек</div>
@@ -200,9 +222,10 @@
         let currentQuestion = null;
         let score = 50;
         let timer = 30;
-		let mode = 0;
         let timerInterval = null;
         let incorrectOptions = [];
+		 let currentMode = 'normal';
+        let currentTagFilter = null;
 
         // Загрузка данных из CSV файла
         async function loadCSV() {
@@ -245,6 +268,40 @@
             }
         }
 		
+		function getIncorrectOptions(mode, correctItem) {
+            if(mode === 'normal') {
+                return getRandomUniqueItems(csvData, 2, [correctItem]);
+            }
+            
+            // Для сложного режима
+            try {
+                const tags = correctItem.extraInfo.split('|').filter(t => t.trim());
+                if(tags.length === 0) throw new Error('Нет тегов');
+                
+                const randomTag = tags[Math.floor(Math.random() * tags.length)];
+                currentTagFilter = randomTag;
+                
+                const similarItems = csvData.filter(item => 
+                    item !== correctItem &&
+                    item.extraInfo.split('|').some(t => t.trim() === randomTag)
+                );
+                
+                if(similarItems.length >= 2) {
+                    return getRandomUniqueItems(similarItems, 2);
+                }
+                
+                // Если недостаточно похожих, добавляем случайные
+                const additional = getRandomUniqueItems(csvData, 2 - similarItems.length, [
+                    correctItem, 
+                    ...similarItems
+                ]);
+                return [...similarItems, ...additional].slice(0,2);
+            } catch(e) {
+                console.warn('Ошибка сложного режима:', e.message);
+                return getRandomUniqueItems(csvData, 2, [correctItem]);
+            }
+        }
+
 
         // Получение случайного элемента из массива
         function getRandomItem(array) {
@@ -321,8 +378,9 @@
                 currentQuestion = getRandomItem(csvData);
                 console.log("Выбран вопрос:", currentQuestion.name);
                 
-                // Получение неправильных ответов
-				incorrectOptions = getRandomUniqueItems(csvData, 2, [currentQuestion]);
+                // Заменяем получение неправильных ответов
+                incorrectOptions = getIncorrectOptions(currentMode, currentQuestion);
+                
                 // Проверка путей к изображениям
                 const image1Path = currentQuestion.image1.trim();
                 const image2Path = currentQuestion.image2.trim();
@@ -371,6 +429,11 @@
                         handleTimeOut();
                     }
                 }, 1000);
+				
+				if(currentMode === 'hard' && currentTagFilter) {
+                    document.querySelector('.question h2').innerHTML += 
+                        `<br><small>Фильтр: ${currentTagFilter}</small>`;
+                }
             } catch (error) {
                 console.error('Ошибка при создании нового раунда:', error);
                 document.body.innerHTML = `
