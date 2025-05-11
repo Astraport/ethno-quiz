@@ -83,11 +83,11 @@
 .option:hover img {
     transform: scale(2); /* Уменьшаем эффект увеличения */
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    z-index: 1;
+    z-index: 2;
 }
 .option:hover + .option img,
 .option:hover ~ .option img {
-    z-index: 2; /* Остальные изображения под активным */
+    z-index: 1; /* Остальные изображения под активным */
 }
 
 .options {
