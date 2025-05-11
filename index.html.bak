@@ -443,6 +443,13 @@
                 `;
             }
         }
+		
+		document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentMode = e.target.value;
+                startNewRound();
+            });
+        });
 
         // Обработка выбора варианта ответа
         function handleOptionClick(event) {

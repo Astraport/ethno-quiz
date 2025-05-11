@@ -430,10 +430,7 @@
                     }
                 }, 1000);
 				
-				if(currentMode === 'hard' && currentTagFilter) {
-                    document.querySelector('.question h2').innerHTML += 
-                        `<br><small>Фильтр: ${currentTagFilter}</small>`;
-                }
+			
             } catch (error) {
                 console.error('Ошибка при создании нового раунда:', error);
                 document.body.innerHTML = `
